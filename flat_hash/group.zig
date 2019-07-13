@@ -5,7 +5,7 @@ pub const Group = struct {
 
     pub const Self = @This();
     pub const Xmm = @Vector(16, i8);
-    pub const Mask = Bitmask(u32);
+    pub const Mask = Bitmask(u16);
 
     pub const kWidth: usize = 16;
 
@@ -21,8 +21,7 @@ pub const Group = struct {
     }
 
     pub fn matchEmpty(self: Self) Mask {
-        // return Mask.init(pmovmskb(psignb(self.ctrl)));
-        return Mask.init(pmovmskb(-%self.ctrl));
+        return Mask.init(pmovmskb(psignb(self.ctrl)));
     }
 
     pub fn matchEmptyOrDeleted(self: Self) Mask {
@@ -105,11 +104,11 @@ pub const Group = struct {
     //     return xmm;
     // }
 
-    // fn psignb(xmm: Xmm) Xmm {
-    //     return asm ("psignb %[xmm], %[ret]"
-    //         : [ret] "=x" (-> Xmm)
-    //         : [xmm] "x" (xmm)
-    //     );
-    // }
+    fn psignb(xmm: Xmm) Xmm {
+        return asm ("psignb %[xmm], %[ret]"
+            : [ret] "=x" (-> Xmm)
+            : [xmm] "x" (xmm)
+        );
+    }
 };
 

@@ -3,7 +3,6 @@ const builtin = @import("builtin");
 const assert = std.debug.assert;
 
 const Group = @import("group.zig").Group;
-const Bitmask = @import("bitmask.zig").Bitmask;
 const ProbeSeq = @import("probe_seq.zig").ProbeSeq;
 const Ctrl = @import("ctrl.zig").Ctrl;
 
@@ -45,17 +44,6 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
             else => {
                 break :transfer_blk false;
             },
-        }
-    };
-    const SlotKeyEqualityIsSlice = slice_blk: {
-        switch(@typeInfo(SlotKey)) {
-            builtin.TypeId.Pointer => |info| {
-                switch(info.size) {
-                    builtin.TypeInfo.Pointer.Size.Slice => { break :slice_blk true; },
-                    else => { break :slice_blk false; }
-                }
-            },
-            else => { break :slice_blk false; }
         }
     };
     const SlotKeyEqualityIsTrivial = equality_blk: {
@@ -179,10 +167,7 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
                     const target = probe.offsetBy(bits.next());
                     if (self.slots[target].hash == hash) {
                         const is_equal = equal_blk: {
-                            if(SlotKeyEqualityIsSlice) {
-                                break :equal_blk sliceEqual(key, self.slots[target].kv.key);
-                            }
-                            else if(SlotKeyEqualityIsTrivial) {
+                            if(SlotKeyEqualityIsTrivial) {
                                 break :equal_blk key == self.slots[target].kv.key;
                             }
                             else {
@@ -193,8 +178,11 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
                             const index_before = (target -% Group.kWidth) & self.capacity;
                             const empty_before = Group.init(self.ctrl + index_before).matchEmpty();
                             const empty_after = Group.init(self.ctrl + target).matchEmpty();
-                            const was_never_full: bool = empty_before.has_bits() and
-                                !empty_after.has_bits() and
+                            // std.debug.warn("before: {x} {}\n", empty_before.mask, empty_before.leadingZeros());
+                            // std.debug.warn("after: {x} {}\n", empty_after.mask, empty_after.trailingZeros());
+                            const was_never_full: bool = 
+                                empty_before.has_bits() and
+                                empty_after.has_bits() and
                                 (empty_after.trailingZeros() + empty_before.leadingZeros()) < Group.kWidth;
 
                             if (was_never_full) {
@@ -218,17 +206,6 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
         pub fn reserve(self: *Self, n: usize) !void {
             if (n > 0)
                 try self.resize(normalizeCapacity(growthToLowerBoundCapacity(n)));
-        }
-
-        fn sliceEqual(k1: Key, k2: SlotKey) bool {
-            if(k1.len != k2.len)
-                return false;
-            var i: usize = 0;
-            while(i < k1.len) : (i += 1) {
-                if(k1[i] != k2[i])
-                    return false;
-            }
-            return true;
         }
 
         fn H1(hash: Hash) Hash {
@@ -257,8 +234,9 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
         }
 
         pub fn findWithHash(self: Self, key: Key, hash: Hash) ?*SlotKV {
+            const h1 = H1(hash);
             const h2 = H2(hash);
-            var probe = ProbeSeq(Group.kWidth).init(self.capacity, H1(hash));
+            var probe = ProbeSeq(Group.kWidth).init(self.capacity, h1);
 
             while (true) {
                 assert(self.capacity == 0 or probe.index < self.capacity);
@@ -268,10 +246,7 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
                     const target = probe.offsetBy(bits.next());
                     if (self.slots[target].hash == hash) {
                         const is_equal = equal_blk: {
-                            if(SlotKeyEqualityIsSlice) {
-                                break :equal_blk sliceEqual(key, self.slots[target].kv.key);
-                            }
-                            else if(SlotKeyEqualityIsTrivial) {
+                            if(SlotKeyEqualityIsTrivial) {
                                 break :equal_blk key == self.slots[target].kv.key;
                             }
                             else {
@@ -315,10 +290,7 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
                     const target = probe.offsetBy(bits.next());
                     if (self.slots[target].hash == hash) {
                         const is_equal = equal_blk: {
-                            if(SlotKeyEqualityIsSlice) {
-                                break :equal_blk sliceEqual(key, self.slots[target].kv.key);
-                            }
-                            else if(SlotKeyEqualityIsTrivial) {
+                            if(SlotKeyEqualityIsTrivial) {
                                 break :equal_blk key == self.slots[target].kv.key;
                             }
                             else {
@@ -378,7 +350,7 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
         }
 
         fn probeIndex(self: Self, hash: Hash, pos: usize) usize {
-            return ((pos -% ProbeSeq(Group.kWidth).init(self.capacity, hash).offset) & self.capacity) / Group.kWidth;
+            return ((pos -% ProbeSeq(Group.kWidth).init(self.capacity, H1(hash)).offset) & self.capacity) / Group.kWidth;
         }
 
         fn convertSpecialToEmptyAndFullToDeleted(self: *Self) void {
@@ -456,7 +428,7 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
         }
 
         fn resetCtrl(self: *Self) void {
-            @memset(@ptrCast([*]u8, self.ctrl), @bitCast(u8, Ctrl.kEmpty), self.capacity + Group.kWidth);
+            @memset(@ptrCast([*]u8, self.ctrl), @bitCast(u8, Ctrl.kEmpty), self.capacity + Group.kWidth + 1);
             self.ctrl[self.capacity] = Ctrl.kSentinel;
         }
 
