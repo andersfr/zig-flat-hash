@@ -43,18 +43,29 @@ test "rehash" {
     defer set.deinit();
     errdefer testing.expect(false);
     
-    try set.reserve(40);
+    try set.reserve(16);
 
     var i: usize = 0;
     while(set.growth_left > 0) : (i += 1) {
-        if(!(i > 31 and i < 64))
-            _ = try set.insert(i*16);
+        _ = try set.insert(i);
+    }
+    var e = i;
+    i = 0;
+    while(i < e) : (i += 1) {
+        testing.expect(set.ctrl[i] >= 0);
     }
     i = 0;
-    while(i < 32) : (i += 1) {
-        _ = set.erase(i*16);
+    while(i < 16) : (i += 1) {
+        _ = set.erase(i);
     }
-    _ = try set.insert(128*50);
+    i = 0;
+    while(i < 16) : (i += 1) {
+        testing.expect(set.ctrl[i] == Ctrl.kDeleted);
+    }
+    while(i < e) : (i += 1) {
+        testing.expect(set.ctrl[i] >= 0);
+    }
+    _ = try set.insert(128*16);
     i = 0;
     while(i <= set.capacity) : (i += 1) {
         testing.expect(set.ctrl[i] != Ctrl.kDeleted);
