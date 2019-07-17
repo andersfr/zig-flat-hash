@@ -1,5 +1,7 @@
 const std = @import("std");
 const hash = std.hash;
+const warn = std.debug.warn;
+const assert = std.debug.assert;
 
 const FlatHash = @import("flat_hash/base.zig").FlatHash;
 
@@ -8,35 +10,27 @@ const CityNative = switch(@sizeOf(usize)) {
     else => hash.CityHash32,
 };
 
+pub const DefaultHash = CityNative;
+
+// Wrapper to force value field to void for set-like flat hashes
 pub fn Set(comptime Key: type, comptime transferFn: var, comptime hashFn: var, comptime equalFn: var) type {
     return FlatHash(Key, void, transferFn, hashFn, equalFn);
 }
 
-pub const StringSet = Set([]const u8, strAllocFn, CityNative.hash, strEqual);
-
+// Wrapper for better name forwarding
 pub const Map = FlatHash;
 
+// Implementation of the very common String set type
+pub const StringSet = Set([]const u8, dupe_u8, CityNative.hash, std.mem.eql_slice_u8);
+
+// Implementation of the very common String->Value map type
 pub fn Dictionary(comptime Value: type) type {
-    return Map([]const u8, Value, strAllocFn, CityNative.hash, strEqual);
+    return Map([]const u8, Value, dupe_u8, CityNative.hash, std.mem.eql_slice_u8);
 }
 
-fn strAllocFn(allocator: *std.mem.Allocator, src: []const u8) ![]u8 {
-    const new = try allocator.alloc(u8, src.len);
-    @memcpy(new.ptr, src.ptr, src.len);
-    return new;
+fn dupe_u8(allocator: *std.mem.Allocator, src: []const u8) ![]u8 {
+    return std.mem.dupe(allocator, u8, src);
 }
-
-fn strEqual(k1: []const u8, k2: []const u8) bool {
-    if(k1.len != k2.len)
-        return false;
-    var i: usize = 0;
-    while(i < k1.len) : (i += 1) {
-        if(k1[i] != k2[i])
-            return false;
-    }
-    return true;
-}
-
 
 test "flat_hash" {
     _ = @import("flat_hash/tests.zig");
