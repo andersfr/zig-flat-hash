@@ -87,6 +87,10 @@ fn IndexMap(comptime KeyT: type, comptime IndexT: type) type {
             return result.kv.value;
         }
 
+        pub fn size(self: Self) usize {
+            return self.lookup.size;
+        }
+
         pub fn indexOf(self: Self, key: KeyT) ?IndexT {
             if(self.lookup.find(key)) |kv| {
                 return kv.value;
