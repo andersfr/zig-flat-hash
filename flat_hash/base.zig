@@ -119,6 +119,17 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
             }
         }
 
+        pub fn resetAndFreeKeys(self: *Self) void {
+            if(self.capacity > 0) {
+                var it = self.iterator();
+                while(it.next()) |kv| {
+                    self.allocator.free(kv.key);
+                }
+                self.resetCtrl();
+                self.resetGrowthLeft();
+            }
+        }
+
         pub fn insert(self: *Self, key: Key) !InsertResult {
             const hash = hashFn(key);
             return try self.insertWithHash(key, hash);
