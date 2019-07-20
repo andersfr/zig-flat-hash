@@ -452,15 +452,15 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
             self.ctrl[self.capacity] = Ctrl.kSentinel;
         }
 
-        pub fn iterator(self: *Self) Iterator {
+        pub fn iterator(self: *const Self) Iterator {
             return Iterator.init(self);
         }
 
         const Iterator = struct {
-            owner: *Self,
+            owner: *const Self,
             index: usize,
 
-            pub fn init(owner: *Self) Iterator {
+            pub fn init(owner: *const Self) Iterator {
                 return Iterator{ .owner = owner, .index = 0 };
             }
 
