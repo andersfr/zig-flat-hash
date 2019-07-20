@@ -116,6 +116,7 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
             if(self.capacity > 0) {
                 self.resetCtrl();
                 self.resetGrowthLeft();
+                self.size = 0;
             }
         }
 
@@ -127,6 +128,7 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
                 }
                 self.resetCtrl();
                 self.resetGrowthLeft();
+                self.size = 0;
             }
         }
 
