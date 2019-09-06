@@ -191,7 +191,7 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
                                 break :equal_blk key == self.slots[target].kv.key;
                             }
                             else {
-                                break :equal_blk equalFn(key, self.slots[target].kv.key);
+                                break :equal_blk equalFn(u8, key, self.slots[target].kv.key);
                             }
                         };
                         if(is_equal) {
@@ -270,7 +270,7 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
                                 break :equal_blk key == self.slots[target].kv.key;
                             }
                             else {
-                                break :equal_blk equalFn(key, self.slots[target].kv.key);
+                                break :equal_blk equalFn(u8, key, self.slots[target].kv.key);
                             }
                         };
                         if(is_equal)
@@ -314,7 +314,7 @@ pub fn FlatHash(comptime Key: type, comptime SlotValue: type, comptime transferF
                                 break :equal_blk key == self.slots[target].kv.key;
                             }
                             else {
-                                break :equal_blk equalFn(key, self.slots[target].kv.key);
+                                break :equal_blk equalFn(u8, key, self.slots[target].kv.key);
                             }
                         };
                         if(is_equal)

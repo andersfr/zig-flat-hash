@@ -21,11 +21,11 @@ pub fn Set(comptime Key: type, comptime transferFn: var, comptime hashFn: var, c
 pub const Map = FlatHash;
 
 // Implementation of the very common String set type
-pub const StringSet = Set([]const u8, dupe_u8, CityNative.hash, std.mem.eql_slice_u8);
+pub const StringSet = Set([]const u8, dupe_u8, CityNative.hash, std.mem.eql);
 
 // Implementation of the very common String->Value map type
 pub fn Dictionary(comptime Value: type) type {
-    return Map([]const u8, Value, dupe_u8, CityNative.hash, std.mem.eql_slice_u8);
+    return Map([]const u8, Value, dupe_u8, CityNative.hash, std.mem.eql);
 }
 
 fn dupe_u8(allocator: *std.mem.Allocator, src: []const u8) ![]u8 {
